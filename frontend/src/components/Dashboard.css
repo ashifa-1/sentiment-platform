@@ -1,0 +1,87 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #111827;
+  color: white;
+}
+
+.dashboard {
+  padding: 20px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.status-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.status-dot {
+  font-size: 18px;
+}
+
+.status-dot.connected {
+  color: #10b981;
+}
+
+.status-dot.disconnected {
+  color: #ef4444;
+}
+
+.last-update {
+  margin-left: 15px;
+  color: #9ca3af;
+}
+
+.row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.card {
+  background-color: #1f2933;
+  padding: 15px;
+  border-radius: 8px;
+  flex: 1;
+}
+
+.recent-posts {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.post-item {
+  border-bottom: 1px solid #374151;
+  padding: 8px 0;
+}
+
+.sentiment {
+  font-size: 12px;
+}
+
+.sentiment.positive {
+  color: #10b981;
+}
+
+.sentiment.negative {
+  color: #ef4444;
+}
+
+.sentiment.neutral {
+  color: #9ca3af;
+}
+
+.metrics-row {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
