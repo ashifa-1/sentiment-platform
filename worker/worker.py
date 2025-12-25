@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 import time
@@ -52,13 +52,13 @@ class SentimentWorker:
         try:
             # Insert or update post
             session.execute(
-                """
-                INSERT INTO social_media_posts
-                (post_id, source, content, author, created_at, ingested_at)
-                VALUES (:post_id, :source, :content, :author, :created_at, :ingested_at)
-                ON CONFLICT (post_id)
-                DO UPDATE SET ingested_at = EXCLUDED.ingested_at
-                """,
+                text("""
+                    INSERT INTO social_media_posts
+                    (post_id, source, content, author, created_at, ingested_at)
+                    VALUES (:post_id, :source, :content, :author, :created_at, :ingested_at)
+                    ON CONFLICT (post_id)
+                    DO UPDATE SET ingested_at = EXCLUDED.ingested_at
+                    """),
                 {
                     "post_id": post_data.get("post_id"),
                     "source": post_data.get("source"),
@@ -71,11 +71,11 @@ class SentimentWorker:
 
             # Insert sentiment analysis
             session.execute(
-                """
-                INSERT INTO sentiment_analysis
-                (post_id, model_name, sentiment_label, confidence_score, emotion, analyzed_at)
-                VALUES (:post_id, :model_name, :sentiment_label, :confidence_score, :emotion, :analyzed_at)
-                """,
+                text("""
+                    INSERT INTO sentiment_analysis
+                    (post_id, model_name, sentiment_label, confidence_score, emotion, analyzed_at)
+                    VALUES (:post_id, :model_name, :sentiment_label, :confidence_score, :emotion, :analyzed_at)
+                    """),
                 {
                     "post_id": post_data.get("post_id"),
                     "model_name": sentiment["model_name"],
@@ -107,7 +107,7 @@ class SentimentWorker:
             messages = self.redis.xreadgroup(
                 groupname=self.consumer_group,
                 consumername=self.consumer_name,
-                streams={self.stream_name: ">"},
+                streams={self.stream_name: "0"},
                 count=1,
                 block=5000
             )
@@ -120,18 +120,34 @@ class SentimentWorker:
                     print(f"\n📩 Processing message {message_id}", flush=True)
                     print("Raw data:", data, flush=True)
 
-                    content = data.get("content", "")
+                    try:
+                        content = data.get("content", "")
 
-                    sentiment = asyncio.run(
-                        self.analyzer.analyze_sentiment(content)
-                    )
-                    emotion = asyncio.run(
-                        self.analyzer.analyze_emotion(content)
-                    )
+                        sentiment = asyncio.run(
+                            self.analyzer.analyze_sentiment(content)
+                        )
+                        emotion = asyncio.run(
+                            self.analyzer.analyze_emotion(content)
+                        )
 
-                    print("🧠 Sentiment result:", sentiment, flush=True)
-                    print("🎭 Emotion result:", emotion, flush=True)
-                    self.save_to_db(data, sentiment, emotion)
+                        print("🧠 Sentiment result:", sentiment, flush=True)
+                        print("🎭 Emotion result:", emotion, flush=True)
+
+                        self.save_to_db(data, sentiment, emotion)
+
+                        print("🟡 About to ACK message", message_id, flush=True)
+
+                        self.redis.xack(
+                            self.stream_name,
+                            self.consumer_group,
+                            message_id
+                        )
+
+                        print(f"✅ Message {message_id} acknowledged", flush=True)
+
+                    except Exception as e:
+                        print("❌ Error processing message:", e, flush=True)
+
 
 
 

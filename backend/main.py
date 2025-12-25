@@ -1,19 +1,22 @@
+from fastapi import FastAPI
+from api.routes import router
 from models.database import init_db
-import time
+from api.websocket import router as websocket_router
+import asyncio
+from services.alerting import AlertService
 
-def main():
+app = FastAPI(title="Real-Time Sentiment Analysis API")
+
+
+@app.on_event("startup")
+async def start_alert_monitor():
+    alert_service = AlertService()
+    asyncio.create_task(alert_service.run_monitoring_loop())
+
+
+@app.on_event("startup")
+def startup_event():
     init_db()
-    print("✅ Database initialized successfully")
-    print("🚀 Backend service running...")
 
-    # Keep container alive
-    while True:
-        time.sleep(60)
-
-if __name__ == "__main__":
-    main()
-from models.database import init_db
-
-if __name__ == "__main__":
-    init_db()
-    print("✅ Database initialized successfully")
+app.include_router(router)
+app.include_router(websocket_router)
