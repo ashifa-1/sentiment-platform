@@ -7,6 +7,15 @@ from services.alerting import AlertService
 
 app = FastAPI(title="Real-Time Sentiment Analysis API")
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.on_event("startup")
 async def start_alert_monitor():

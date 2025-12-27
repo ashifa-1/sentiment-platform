@@ -1,8 +1,8 @@
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background-color: #111827;
-  color: white;
+  background-color: #f0f2f5;
+  color: rgb(9, 2, 2);
 }
 
 .dashboard {
@@ -47,8 +47,9 @@ body {
 }
 
 .card {
-  background-color: #1f2933;
+  background-color: #dee9f4;
   padding: 15px;
+  margin:10px;
   border-radius: 8px;
   flex: 1;
 }

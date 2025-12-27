@@ -15,6 +15,9 @@ function Dashboard() {
   const [distribution, setDistribution] = useState(null);
   const [trendData, setTrendData] = useState([]);
   const [recentPosts, setRecentPosts] = useState([]);
+  const [connectionStatus, setConnectionStatus] = useState("connecting");
+  const [lastUpdate, setLastUpdate] = useState(null);
+
   const [metrics, setMetrics] = useState({
     total: 0,
     positive: 0,
@@ -22,45 +25,70 @@ function Dashboard() {
     neutral: 0
   });
 
-  const [connectionStatus, setConnectionStatus] = useState("connecting");
-  const [lastUpdate, setLastUpdate] = useState(null);
-
+  /* ---------------- Initial REST Load ---------------- */
   useEffect(() => {
     async function loadInitialData() {
-      const dist = await fetchDistribution(24);
-      const trend = await fetchAggregateData("hour");
-      const posts = await fetchPosts(10, 0);
+      try {
+        const dist = await fetchDistribution(24);
+        setDistribution(dist);
 
-      setDistribution(dist.distribution);
-      setTrendData(trend.data);
-      setRecentPosts(posts.posts);
+        if (dist?.distribution) {
+          const d = dist.distribution;
+          const total =
+            d.positive + d.negative + d.neutral;
 
-      setMetrics({
-        total: dist.total,
-        positive: dist.distribution.positive,
-        negative: dist.distribution.negative,
-        neutral: dist.distribution.neutral
-      });
+          setMetrics({
+            total,
+            positive: d.positive,
+            negative: d.negative,
+            neutral: d.neutral
+          });
+        }
 
-      setLastUpdate(new Date());
+        const agg = await fetchAggregateData("hour");
+        setTrendData(agg?.data || []);
+
+        const posts = await fetchPosts(10, 0);
+        setRecentPosts(posts?.posts || []);
+      } catch (err) {
+        console.error("Initial data load failed:", err);
+      }
     }
 
     loadInitialData();
+  }, []);
 
+  /* ---------------- WebSocket ---------------- */
+  useEffect(() => {
     const ws = connectWebSocket(
-      (msg) => {
-        if (msg.type === "connected") {
+      (message) => {
+        setLastUpdate(new Date());
+
+        if (message.type === "connected") {
           setConnectionStatus("connected");
         }
 
-        if (msg.type === "new_post") {
-          setRecentPosts((prev) => [msg.data, ...prev.slice(0, 9)]);
-          setLastUpdate(new Date());
+        if (message.type === "new_post") {
+          setRecentPosts((prev) => [
+            message.data,
+            ...prev.slice(0, 9)
+          ]);
         }
 
-        if (msg.type === "metrics_update") {
-          setMetrics(msg.data.last_hour);
-          setLastUpdate(new Date());
+        if (message.type === "metrics_update") {
+          const d = message.data.last_24_hours;
+          const total = d.positive + d.negative + d.neutral;
+
+          setMetrics({
+            total,
+            positive: d.positive,
+            negative: d.negative,
+            neutral: d.neutral
+          });
+
+          setDistribution({
+            distribution: d
+          });
         }
       },
       () => setConnectionStatus("disconnected"),
@@ -79,7 +107,8 @@ function Dashboard() {
           <span className={`status-dot ${connectionStatus}`}>●</span>
           <span>{connectionStatus}</span>
           <span className="last-update">
-            Last Update: {lastUpdate ? lastUpdate.toLocaleTimeString() : "--"}
+            Last Update:{" "}
+            {lastUpdate ? lastUpdate.toLocaleTimeString() : "--"}
           </span>
         </div>
       </div>
@@ -90,9 +119,10 @@ function Dashboard() {
 
         <div className="card recent-posts">
           <h3>Recent Posts</h3>
+          {recentPosts.length === 0 && <p>No posts yet</p>}
           {recentPosts.map((post) => (
             <div key={post.post_id} className="post-item">
-              <p>{post.content.slice(0, 100)}...</p>
+              <p>{post.content.slice(0, 120)}...</p>
               <span className={`sentiment ${post.sentiment?.label}`}>
                 {post.sentiment?.label}
               </span>
