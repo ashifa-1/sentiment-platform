@@ -1,0 +1,11 @@
+fastapi
+sqlalchemy
+asyncpg
+redis
+
+# Use the lighter versions
+
+transformers
+torch --index-url https://download.pytorch.org/whl/cpu
+pydantic-settings
+python-dotenv
