@@ -1,19 +1,71 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-body {
+/* frontend/src/index.css */
+/* Ensure the app takes up the full browser height */
+html, body, #root {
+  height: 100%;
   margin: 0;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding: 0;
+  background-color: #ffffff; /* Base dark color */
+  color: #060000;
+  font-family: 'Courier New', Courier, monospace;
+  overflow: hidden; /* This prevents the whole page from scrolling */
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+/* Main Wrapper */
+.dashboard-viewport {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 1rem;
+  box-sizing: border-box;
+  gap: 1rem;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: #1a1c1e;
+
+/* Header */
+.header-card {
+  flex: 0 0 auto;
+  background-color: #dfe0e1;
+  border-left: 4px solid #3b82f6;
+  padding: 10px 20px;
 }
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #4b5563;
-} 
+
+/* Middle Section (Distribution & Feed) */
+.middle-row {
+  flex: 1; /* Takes up available middle space */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  min-height: 0; /* Crucial for internal scrolling to work */
+}
+
+/* Card Styling */
+.card {
+  background-color: #eff0f1;
+  border: 1px solid #374151;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* The Secret to the Scrollable Feed */
+.scrollable-content {
+  flex: 1;
+  overflow-y: auto; /* Only this container will scroll */
+  margin-top: 10px;
+  padding-right: 5px;
+}
+
+/* Chart Container */
+.chart-container {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+/* Bottom Metrics */
+.metrics-row {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
