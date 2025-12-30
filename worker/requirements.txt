@@ -1,11 +1,10 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+requests
+
 fastapi
+uvicorn
 sqlalchemy
-asyncpg
+psycopg2-binary
 redis
-
-# Use the lighter versions
-
+torch
 transformers
-torch --index-url https://download.pytorch.org/whl/cpu
-pydantic-settings
-python-dotenv

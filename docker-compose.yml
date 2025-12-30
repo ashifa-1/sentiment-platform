@@ -1,69 +1,112 @@
-version: '3.8'
-
 services:
-  # 1. Database Service
+  # Service 1: Database
   db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-sentiment_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sentiment-net
 
-  # 2. Redis Service
+  # Service 2: Redis
   redis:
     image: redis:7-alpine
     command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - sentiment-net
 
-  # 3. Backend API (FastAPI)
+  # Service 3: Backend API
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    restart: always  # Added: Ensures it retries if DB is slow
+    volumes:
+      - .:/app
     ports:
       - "8000:8000"
+    environment:
+      - PYTHONPATH=/app/backend
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-sentiment_db}
+      - REDIS_HOST=redis
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-    env_file: .env
+    networks:
+      - sentiment-net
 
-  # 4. Worker Service
+  # Service 4: Worker
   worker:
-      build: 
-        context: ./worker  # This tells Docker to look in the worker folder
-        dockerfile: Dockerfile
-      restart: always
-      env_file: .env
-      depends_on:
-        - db
-        - redis
-        
-  # 5. Ingester Service
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python worker/worker.py
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app/backend:/app 
+      - REDIS_HOST=redis
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-sentiment_db}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sentiment-net
+
+  # Service 5: Ingester
   ingester:
     build: ./ingester
-    restart: always
+    command: python ingester.py
+    volumes:
+      - ./ingester:/app
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_STREAM_NAME=${REDIS_STREAM_NAME:-social_posts_stream}
     depends_on:
       redis:
         condition: service_healthy
-    env_file: .env
+    networks:
+      - sentiment-net
 
-  # 6. Frontend Dashboard
+  # Service 6: Frontend
   frontend:
-    build: ./frontend
+    build: ./frontend  # Changed: Points to frontend/Dockerfile
     ports:
-      - "3000:3000"
-    env_file: .env
+      - "3000:3000"    # Changed: Vite default port
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_PORT=3000
+      - VITE_API_URL=http://localhost:8000
+    tty: true
+    networks:
+      - sentiment-net
 
 volumes:
   postgres_data:
+  redis_data:
+
+networks:
+  sentiment-net:
+    driver: bridge
