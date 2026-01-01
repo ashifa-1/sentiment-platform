@@ -40,7 +40,7 @@ class AlertService:
 
             if ratio > self.threshold:
                 logger.warning(f"ALERT TRIGGERED: Negative Ratio {ratio:.2f}")
-                
+                    
                 # Save Alert
                 alert = SentimentAlert(
                     alert_type="high_negative_ratio",

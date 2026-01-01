@@ -11,10 +11,13 @@ logger = logging.getLogger(__name__)
 class SentimentAnalyzer:
     """
     Unified interface for sentiment analysis using multiple model backends
+    with threshold logic to support Neutral categorization.
     """
     
     def __init__(self, model_type: str = 'local', model_name: str = None):
         self.model_type = model_type
+        # Set the threshold: If confidence is below 0.6, we call it neutral
+        self.neutral_threshold = 0.60 
         
         if self.model_type == 'local':
             # Load default models from env if not provided
@@ -30,37 +33,41 @@ class SentimentAnalyzer:
             
         elif self.model_type == 'external':
             self.api_key = os.getenv("EXTERNAL_LLM_API_KEY")
-            # We will implement external logic later if needed
             logger.info("External LLM mode initialized")
 
     async def analyze_sentiment(self, text: str) -> dict:
-        """Analyze sentiment (Positive/Negative/Neutral)"""
+        """Analyze sentiment (Positive/Negative/Neutral) with threshold logic"""
         if not text:
             raise ValueError("Input text cannot be empty")
 
         if self.model_type == 'local':
-            # Transformers pipeline returns a list of dicts: [{'label': 'POSITIVE', 'score': 0.99}]
             # Run in a threadpool since transformers is blocking
             result = await asyncio.to_thread(self.sentiment_pipeline, text)
             top_result = result[0]
             
-            label_map = {
-                "POSITIVE": "positive",
-                "NEGATIVE": "negative",
-                "NEUTRAL": "neutral" # Some models return LABEL_0 etc, need to check specific model
-            }
-            
-            # Helper to normalize labels
             raw_label = top_result['label'].upper()
-            final_label = label_map.get(raw_label, "neutral")
+            confidence = float(top_result['score'])
+
+            # THRESHOLD LOGIC:
+            # DistilBert only knows POS/NEG. If it's unsure (low score), we force NEUTRAL.
+            if confidence < self.neutral_threshold:
+                final_label = "neutral"
+            else:
+                label_map = {
+                    "POSITIVE": "positive",
+                    "NEGATIVE": "negative",
+                    "LABEL_1": "positive", # Support for some model variants
+                    "LABEL_0": "negative"
+                }
+                final_label = label_map.get(raw_label, "neutral")
 
             return {
                 'sentiment_label': final_label,
-                'confidence_score': float(top_result['score']),
+                'confidence_score': confidence,
                 'model_name': self.sentiment_model_name
             }
         
-        return {} # Placeholder for external
+        return {"sentiment_label": "neutral", "confidence_score": 0.0}
 
     async def analyze_emotion(self, text: str) -> dict:
         """Detect emotion (joy, anger, etc)"""

@@ -8,3 +8,6 @@ sqlalchemy
 psycopg2-binary
 redis
 torch
+pytest==8.0.0
+pytest-cov==4.1.0
+httpx==0.26.0

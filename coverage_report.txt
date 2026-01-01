@@ -1,0 +1,55 @@
+============================= test session starts ==============================
+platform linux -- Python 3.9.25, pytest-8.0.0, pluggy-1.6.0
+rootdir: /app
+configfile: pytest.ini
+plugins: cov-4.1.0, anyio-4.12.0
+collected 9 items
+
+backend/tests/test_alerting.py .                                         [ 11%]
+backend/tests/test_api.py ....                                           [ 55%]
+backend/tests/test_integration.py .                                      [ 66%]
+backend/tests/test_sentiment.py ...                                      [100%]
+
+=============================== warnings summary ===============================
+backend/app/models/database.py:15
+backend/app/models/database.py:15
+  /app/backend/app/models/database.py:15: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/app/api/routes.py:99
+  /app/backend/app/api/routes.py:99: FastAPIDeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+    period: str = Query(..., regex="^(minute|hour|day)$"),
+
+backend/app/main.py:41
+  /app/backend/app/main.py:41: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+../usr/local/lib/python3.9/site-packages/fastapi/applications.py:4576
+  /usr/local/lib/python3.9/site-packages/fastapi/applications.py:4576: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+---------- coverage: platform linux, python 3.9.25-final-0 -----------
+Name                                         Stmts   Miss  Cover
+----------------------------------------------------------------
+backend/app/api/routes.py                       78     33    58%
+backend/app/api/websocket.py                    23     11    52%
+backend/app/main.py                             31      1    97%
+backend/app/models/database.py                  42      1    98%
+backend/app/services/alerting.py                38      3    92%
+backend/app/services/sentiment_analyzer.py      53     17    68%
+----------------------------------------------------------------
+TOTAL                                          265     66    75%
+
+======================== 9 passed, 5 warnings in 13.78s ========================
