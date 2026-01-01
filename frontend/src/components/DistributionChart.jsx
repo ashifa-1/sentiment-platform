@@ -20,7 +20,7 @@ const DistributionChart = ({ data }) => {
                   <Cell key={`cell-${index}`} fill={COLORS[entry.name.toLowerCase()]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{backgroundColor: '#1a1c1e', border: '1px solid #374151', color: '#fff'}} />
+              <Tooltip contentStyle={{backgroundColor: '#b1d9d9ff', border: '1px solid #374151', color: '#fff'}} />
             </PieChart>
           </ResponsiveContainer>
         ) : (
